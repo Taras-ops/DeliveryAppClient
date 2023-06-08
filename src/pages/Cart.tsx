@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 
 import ProductInterface from '../types/Product'
+import instance from '../axios'
 
 interface CartProps {
   cartProducts: ProductInterface[]
@@ -8,17 +9,21 @@ interface CartProps {
 }
 
 const Cart = ({ cartProducts, setCartProducts }: CartProps) => {
-  const [amount, setAmount] = useState(0)
+  const [amount, setAmount] = useState<number>(0)
+  const [username, setUsername] = useState<string>('')
+  const [email, setEmail] = useState<string>('')
+  const [phone, setPhone] = useState<string>('')
+  const [address, setAddress] = useState<string>('')
 
   const onChangeQuantity = (e: any, item: ProductInterface) => {
-    item.quantity = e.target.value
+    item.quantity = e.target.value    
     amountCalculation()
   }
 
   const amountCalculation = () => {
     let sum: number = 0
     cartProducts.forEach((item) => {
-      sum += item.price * item.quantity
+      sum = sum + item.price * item.quantity
     })
 
     setAmount(sum)
@@ -27,6 +32,32 @@ const Cart = ({ cartProducts, setCartProducts }: CartProps) => {
   const onDeleteCartItem = (item: ProductInterface) => {
     setCartProducts((state: ProductInterface[]) => state.filter((product: ProductInterface) => product !== item))
     localStorage.setItem('cartProducts', JSON.stringify(cartProducts.filter((product) => product !== item)))
+  }
+
+  const onClickSubmitButton = async (e: React.FormEvent) => {
+    e.preventDefault()
+    cartProducts.forEach((product) => {
+      if(!product.quantity) {
+        product.quantity = 1
+      }
+    })
+    const newOrder = {
+      username: username,
+      email: email,
+      phone: phone,
+      address: address,
+      goods: [
+        cartProducts
+      ]
+    }
+
+    await instance.post('orders', newOrder, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+      .then(() => alert("Your data were sent to DB"))
+      .catch((err) => console.log(err))
   }
 
   useEffect(() => {
@@ -46,6 +77,10 @@ const Cart = ({ cartProducts, setCartProducts }: CartProps) => {
                 id='name-input'
                 type='text'
                 placeholder='Your name...'
+                required
+                min={3}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className='bg-transparent block border w-full p-2 placeholder:italic placeholder:text-white placeholder:opacity-50'
               />
             </div>
@@ -56,6 +91,9 @@ const Cart = ({ cartProducts, setCartProducts }: CartProps) => {
               <input
                 id='email-input'
                 type='email'
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder='Your email...'
                 className='bg-transparent block border w-full p-2 placeholder:italic placeholder:text-white placeholder:opacity-50'
               />
@@ -67,6 +105,9 @@ const Cart = ({ cartProducts, setCartProducts }: CartProps) => {
               <input
                 id='phone-input'
                 type='tel'
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 placeholder='Your phone...'
                 className='bg-transparent block border w-full p-2 placeholder:italic placeholder:text-white placeholder:opacity-50'
               />
@@ -78,6 +119,10 @@ const Cart = ({ cartProducts, setCartProducts }: CartProps) => {
               <input
                 id='address-input'
                 type='text'
+                required
+                min={5}
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
                 placeholder='Your address...'
                 className='bg-transparent block border w-full p-2 placeholder:italic placeholder:text-white placeholder:opacity-50'
               />
@@ -126,7 +171,7 @@ const Cart = ({ cartProducts, setCartProducts }: CartProps) => {
           <p className='text-green mb-2 block'>
             Total Price: <span>{amount}</span>
           </p>
-          <button className='bg-green text-white py-2 px-5 font-bold text-xl'>
+          <button type='submit' onClick={onClickSubmitButton} className='bg-green text-white py-2 px-5 font-bold text-xl'>
             Submit
           </button>
         </div>
